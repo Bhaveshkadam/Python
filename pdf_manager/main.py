@@ -31,3 +31,32 @@ async def download_pdf(filename: str):
         raise HTTPException(status_code=404, detail="File not found please try again")
     
     return FileResponse(file_location, media_type="application/pdf", filename=filename)
+
+# Update File
+@app.put("/pdf/{filename}/update/")
+async def update_pdf(filename: str, file: UploadFile = File(...)):
+    file_location = os.path.join(UPLOAD_DIRECTORY, filename)
+    
+    if not os.path.exists(file_location):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    with open(file_location, "wb") as f:
+        f.write(file.file.read())
+    
+    return {
+        "filename": filename, "message": "File updated successfully"
+        }
+
+# Delete File
+@app.delete("/pdf/{filename}/delete/")
+async def delete_pdf(filename: str):
+    file_location = os.path.join(UPLOAD_DIRECTORY, filename)
+    
+    if not os.path.exists(file_location):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    os.remove(file_location)
+    
+    return {
+        "filename": filename, "message": "File deleted successfully"
+        }
