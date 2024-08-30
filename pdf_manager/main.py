@@ -10,7 +10,8 @@ UPLOAD_DIRECTORY = "./files/"
 if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
 
-@app.post("/pdf_upload/")
+# Uplode File
+@app.post("/pdf_upload/") 
 async def upload_pdf(file: UploadFile = File(...)):
     file_location = os.path.join(UPLOAD_DIRECTORY, file.filename)
     
@@ -21,11 +22,12 @@ async def upload_pdf(file: UploadFile = File(...)):
         "filename": file.filename, "message": "File uploaded successfully on " + UPLOAD_DIRECTORY
         }
 
+# Download File
 @app.get("/pdf/{filename}/download/")
 async def download_pdf(filename: str):
     file_location = os.path.join(UPLOAD_DIRECTORY, filename)
     
     if not os.path.exists(file_location):
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail="File not found please try again")
     
     return FileResponse(file_location, media_type="application/pdf", filename=filename)
