@@ -36,19 +36,10 @@ def generate_embeddings(text: str) -> list:
 
 def store_embeddings_in_db(filename: str, embeddings: list):
     try:
-        conn = psycopg2.connect(
-            dbname="pdf_management", 
-            user="postgres", 
-            password="qwerty1201", 
-            host="localhost", 
-            port="5432"
-        )
         cursor = conn.cursor()
 
         if isinstance(embeddings, list):
             embeddings = np.array(embeddings)
-
-        embeddings = embeddings.tolist()
 
         sql = """
         INSERT INTO pdf_embeddings (filename, embeddings)
@@ -57,14 +48,13 @@ def store_embeddings_in_db(filename: str, embeddings: list):
         SET embeddings = EXCLUDED.embeddings
         """
 
-        cursor.execute(sql, (filename, embeddings))
+        cursor.execute(sql, (filename, embeddings.tolist()))
         conn.commit()
     except Exception as e:
         print(f"An error occurred: {e}")
         conn.rollback()
     finally:
         cursor.close()
-        conn.close()
 
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -78,10 +68,9 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     text = extract_text_from_pdf(file_path)
     embeddings = generate_embeddings(text)
-    print(f"Generated embeddings: {embeddings}")  # Debugging line
     store_embeddings_in_db(file.filename, embeddings)
 
-    return {"filename": file.filename , "message": "File updated successfully"}
+    return {"filename": file.filename, "message": "File uploaded successfully"}
 
 @app.get("/download/{filename}")
 async def download_pdf(filename: str):
@@ -106,7 +95,6 @@ async def update_pdf(filename: str, file: UploadFile = File(...)):
     store_embeddings_in_db(filename, embeddings)
 
     return {"status": "success", "message": f"Embeddings for {filename} updated successfully."}
-
 
 @app.delete("/delete/{filename}")
 async def delete_pdf(filename: str):
