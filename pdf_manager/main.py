@@ -1,21 +1,11 @@
-from chromadb import Embeddings
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 import os
 import aiofiles
 import fitz  # PyMuPDF
-from matplotlib.backend_bases import cursors
-from matplotlib.widgets import Cursor
 import numpy as np
 import psycopg2
 from sentence_transformers import SentenceTransformer
-from sqlalchemy import update
-from textblob import Sentence
-import torch
-from transformers import AutoTokenizer, AutoModel
-import torch.nn.functional as F
-from psycopg2.extensions import register_adapter, AsIs
 
 app = FastAPI()
 
@@ -62,7 +52,7 @@ def store_embeddings_in_db(filename: str, embeddings: list):
 
         sql = """
         INSERT INTO pdf_embeddings (filename, embeddings)
-        VALUES (%s, %s)
+        VALUES (%s, %s::vector)
         ON CONFLICT (filename) DO UPDATE
         SET embeddings = EXCLUDED.embeddings
         """
@@ -127,7 +117,3 @@ async def delete_pdf(filename: str):
     conn.commit()
 
     return {"message": "File deleted successfully"}
-
-
-tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
