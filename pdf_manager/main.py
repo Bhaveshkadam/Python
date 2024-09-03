@@ -118,6 +118,7 @@ async def delete_pdf(filename: str):
 
 class QuestionRequest(BaseModel):
     question: str
+    filename: str = None
 
 class QuestionResponse(BaseModel):
     filename: str
@@ -127,6 +128,10 @@ class QuestionResponse(BaseModel):
 @app.post("/question", response_model=QuestionResponse)
 async def query_pdf(request: QuestionRequest):
     question = request.question
+    filename = request.filename
+
+    if not question:
+        raise HTTPException(status_code=400, detail="Not empty, please ask a question.")
     
     model = SentenceTransformer('all-MiniLM-L6-v2')
     query_embedding = model.encode([question])[0]  
@@ -139,7 +144,11 @@ async def query_pdf(request: QuestionRequest):
     )        
     cursor = conn.cursor()
 
-    cursor.execute("SELECT filename, embeddings FROM pdf_embeddings")
+    if filename:
+        cursor.execute("SELECT filename, embeddings FROM pdf_embeddings WHERE filename = %s", (filename,))
+    else:   
+        cursor.execute("SELECT filename, embeddings FROM pdf_embeddings")
+    
     rows = cursor.fetchall()
 
     best_score = float('-inf')
