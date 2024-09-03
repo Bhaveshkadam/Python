@@ -6,8 +6,18 @@ import fitz  # PyMuPDF
 import numpy as np
 import psycopg2
 from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from typing import List, Tuple
+import json
+from sklearn.metrics.pairwise import cosine_similarity
+import logging
+from pydantic import BaseModel
 
 app = FastAPI()
+
+logging.basicConfig(level=logging.INFO)
 
 PDF_DIR = "./files/"
 os.makedirs(PDF_DIR, exist_ok=True)
@@ -29,17 +39,17 @@ def extract_text_from_pdf(pdf_path: str) -> str:
             text += page.get_text()
     return text
 
-def generate_embeddings(text: str) -> list:
+def generate_embeddings(text: str) -> np.ndarray:
     model = SentenceTransformer('all-MiniLM-L6-v2')
     embeddings = model.encode(text)
-    return embeddings.tolist()
+    return np.array(embeddings)
 
-def store_embeddings_in_db(filename: str, embeddings: list):
+def store_embeddings_in_db(filename: str, embeddings: np.ndarray):
     try:
         cursor = conn.cursor()
 
-        if isinstance(embeddings, list):
-            embeddings = np.array(embeddings)
+        # if isinstance(embeddings, list):
+        #     embeddings = np.array(embeddings)
 
         sql = """
         INSERT INTO pdf_embeddings (filename, embeddings)
@@ -105,3 +115,61 @@ async def delete_pdf(filename: str):
     conn.commit()
 
     return {"message": "File deleted successfully"}
+
+class QuestionRequest(BaseModel):
+    question: str
+
+class QuestionResponse(BaseModel):
+    filename: str
+    score: float
+    content: str
+
+@app.post("/question", response_model=QuestionResponse)
+async def query_pdf(request: QuestionRequest):
+    question = request.question
+    
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    query_embedding = model.encode([question])[0]  
+    conn = psycopg2.connect(
+        dbname="pdf_management",
+        user="postgres",
+        password="qwerty1201",
+        host="localhost",
+        port="5432"
+    )        
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT filename, embeddings FROM pdf_embeddings")
+    rows = cursor.fetchall()
+
+    best_score = float('-inf')
+    best_filename = None
+    similarity_threshold = 0.3
+
+    for row in rows:
+        filename, stored_embedding_str = row
+        
+        try:
+            stored_embedding = json.loads(stored_embedding_str)
+            stored_embedding = np.array(stored_embedding, dtype=np.float32)
+            score = cosine_similarity([query_embedding], [stored_embedding])[0][0]
+            logging.info(f"Filename: {filename}, Similarity Score: {score}")
+
+            if score > best_score:
+                best_score = score
+                best_filename = filename
+        except (json.JSONDecodeError, ValueError) as e:
+            logging.error(f"Error processing stored_embedding for filename {filename}: {e}")
+            continue
+
+    conn.close()
+
+    if best_filename is None or best_score < similarity_threshold:
+        logging.info(f"No relevant information found for question: {question}")
+        raise HTTPException(status_code=404, detail="Sorry, I couldn't find relevant information in the documents.")
+
+
+    pdf_path = os.path.join(PDF_DIR, best_filename)
+    best_content = extract_text_from_pdf(pdf_path)
+
+    return QuestionResponse(filename=best_filename, score=best_score, content=best_content)
