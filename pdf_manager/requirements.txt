@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+aiofiles
+psycopg2
+sentence-transformers
+scikit-learn
+numpy
+PyMuPDF
+transformers
