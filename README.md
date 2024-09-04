@@ -1,2 +1,63 @@
-# Python
-Develop a REST API with the help of FASTAPI in Python. 
+# Setup Instructions
+
+### To set up and run the project locally, follow these steps:
+
+ 1. Prerequisites
+Python 3.7+ installed on your system.
+   PostgreSQL installed and running.
+  Virtual Environment (optional but recommended).
+
+2. Clone the Repository
+   Clone the project repository to your local machine:
+   ```bash
+   git clone <repository-url>
+   cd <repository-directory>
+   ```
+
+3. Set Up a Virtual Environment (Optional)
+   Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate 
+   ```
+
+4. Install Required Packages
+   Install the dependencies listed in `requirements.txt`:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   If `requirements.txt` is not available, install the dependencies manually:
+   ```bash
+   pip install fastapi aiofiles psycopg2-binary sentence-transformers scikit-learn pymupdf
+   ```
+
+ 5. Set Up PostgreSQL Database
+   - Ensure PostgreSQL is running.
+   - Create a new database named `pdf_management`.
+   - Create a table named `pdf_embeddings` with the following structure:
+   ```sql
+     CREATE TABLE  pdf_embeddings (
+     ID SERIAL PRIMARY KEY,
+     filename TEXT UNIQUE,
+     embeddings VECTOR(384)  -- Adjust the dimensionality based on your embeddings
+     );
+  ```
+6. Run the Application
+   Start the FastAPI server:
+   ```bash
+   uvicorn main:app --reload
+   ```
+   - Access the application at `http://127.0.0.1:8000`.
+   - API documentation will be available at `http://127.0.0.1:8000/docs`.
+
+7. Upload PDFs and Query for Answers
+   - Use the `/upload/` endpoint to upload PDF files.
+   - Use the `/download/` endpoint to download PDF files.
+   - Use the `/update/` endpoint to update PDF files.
+   - Use the `/delete/` endpoint to delete PDF files.
+   - Use the `/question/` endpoint to question for relevant information.
+
+
+
+
