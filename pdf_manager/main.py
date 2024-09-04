@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import json
 import logging
 from pydantic import BaseModel
+from transformers import pipeline
 
 app = FastAPI()
 
@@ -98,6 +99,8 @@ async def delete_pdf(filename: str):
 
     return {"message": "File deleted successfully"}
 
+llm = pipeline("text-generation", model="gpt2")
+
 class QuestionRequest(BaseModel):
     question: str
     filename: str = None
@@ -106,9 +109,10 @@ class QuestionResponse(BaseModel):
     filename: str
     score: float
     content: str
+    llm_answer: str
 
 @app.post("/question", response_model=QuestionResponse)
-async def query_pdf(request: QuestionRequest):
+async def quation_answeer(request: QuestionRequest):
     question = request.question
     filename = request.filename
 
@@ -151,4 +155,6 @@ async def query_pdf(request: QuestionRequest):
     pdf_path = os.path.join(PDF_DIR, best_filename)
     best_content = extract_text_from_pdf(pdf_path)
 
-    return QuestionResponse(filename=best_filename, score=best_score, content=best_content)
+    llm_answer = llm(question + " " + best_content, max_new_tokens=100)[0]['generated_text']
+
+    return QuestionResponse(filename=best_filename, score=best_score, content=best_content, llm_answer=llm_answer)
