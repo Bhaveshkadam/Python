@@ -2,15 +2,16 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 import os
 import aiofiles
-import fitz  # PyMuPDF
 import numpy as np
-import psycopg2
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import json
 import logging
-from pydantic import BaseModel
 from transformers import pipeline
+from functions.requestresponce import QuestionRequest, QuestionResponse
+from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db
+from models.llm import llms
+from functions.database_connection import get_db_connection
 
 app = FastAPI()
 
@@ -19,37 +20,8 @@ logging.basicConfig(level=logging.INFO)
 PDF_DIR = "./files/"
 os.makedirs(PDF_DIR, exist_ok=True)
 
-conn = psycopg2.connect(
-    dbname="pdf_management",
-    user="postgres",
-    password="qwerty1201",
-    host="localhost",
-    port="5432"
-)
-cur = conn.cursor()
+conn, cur = get_db_connection()
 
-def extract_text_from_pdf(pdf_path: str) -> str:
-    """Extract text from the PDF using PyMuPDF."""
-    with fitz.open(pdf_path) as doc:
-        return "".join(page.get_text() for page in doc)
-
-def generate_embeddings(text: str) -> np.ndarray:
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    return model.encode(text)
-
-def store_embeddings_in_db(filename: str, embeddings: np.ndarray):
-    try:
-        sql = """
-        INSERT INTO pdf_embeddings (filename, embeddings)
-        VALUES (%s, %s::vector)
-        ON CONFLICT (filename) DO UPDATE
-        SET embeddings = EXCLUDED.embeddings
-        """
-        cur.execute(sql, (filename, embeddings.tolist()))
-        conn.commit()
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        conn.rollback()
 
 @app.post("/upload/")
 async def upload_pdf(file: UploadFile = File(...)):
@@ -98,22 +70,6 @@ async def delete_pdf(filename: str):
     conn.commit()
 
     return {"message": "File deleted successfully"}
-
-llms = {
-    "gpt2": pipeline("text-generation", model="gpt2"),
-    "bart": pipeline("text2text-generation", model="facebook/bart-large") 
-}
-
-class QuestionRequest(BaseModel):
-    question: str
-    filename: str = None
-    llm: str = "gpt2"  
-
-class QuestionResponse(BaseModel):
-    filename: str
-    score: float
-    content: str
-    llm_answer: str
 
 @app.post("/question", response_model=QuestionResponse)
 async def quation_answeer(request: QuestionRequest):
