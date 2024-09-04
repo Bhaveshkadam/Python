@@ -99,11 +99,15 @@ async def delete_pdf(filename: str):
 
     return {"message": "File deleted successfully"}
 
-llm = pipeline("text-generation", model="gpt2")
+llms = {
+    "gpt2": pipeline("text-generation", model="gpt2"),
+    "bart": pipeline("text2text-generation", model="facebook/bart-large") 
+}
 
 class QuestionRequest(BaseModel):
     question: str
     filename: str = None
+    llm: str = "gpt2"  
 
 class QuestionResponse(BaseModel):
     filename: str
@@ -115,6 +119,7 @@ class QuestionResponse(BaseModel):
 async def quation_answeer(request: QuestionRequest):
     question = request.question
     filename = request.filename
+    selected_llm = request.llm
 
     if not question:
         raise HTTPException(status_code=400, detail="Not empty, please ask a question.")
@@ -155,6 +160,15 @@ async def quation_answeer(request: QuestionRequest):
     pdf_path = os.path.join(PDF_DIR, best_filename)
     best_content = extract_text_from_pdf(pdf_path)
 
-    llm_answer = llm(question + " " + best_content, max_new_tokens=100)[0]['generated_text']
+    if selected_llm not in llms:
+        raise HTTPException(status_code=400, detail="Selected LLM is not available.")
 
+    llm_pipeline = llms[selected_llm]
+
+    # Generate the answer using the selected LLM pipeline
+    if selected_llm == "bart":
+        llm_answer = llm_pipeline(f"{question} {best_content}", max_length=100, num_beams=4, early_stopping=True)[0]['generated_text']
+    else:
+        llm_answer = llm_pipeline(question + " " + best_content, max_new_tokens=100)[0]['generated_text']
+        
     return QuestionResponse(filename=best_filename, score=best_score, content=best_content, llm_answer=llm_answer)
