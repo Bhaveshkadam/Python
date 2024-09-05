@@ -34,7 +34,7 @@ Python 3.7+ installed on your system.
 
  5. Set Up PostgreSQL Database
    - Ensure PostgreSQL is running.
-   - Create a new database named `pdf_management`.
+   - Create a new database named `pdf_managbement`.
    - Create a table named `pdf_embeddings` with the following structure:
    ```sql
      CREATE TABLE  pdf_embeddings (
@@ -51,13 +51,26 @@ Python 3.7+ installed on your system.
    - Access the application at `http://127.0.0.1:8000`.
    - API documentation will be available at `http://127.0.0.1:8000/docs`.
 
-7. Upload PDFs and Query for Answers
+7. Here is the flow of Application APIs
+
    - Use the `/upload/` endpoint to upload PDF files.
+   
+   ![alt text](https://github.com/Bhaveshkadam/Python/blob/main/Document/Upload.jpeg)
+   
    - Use the `/download/` endpoint to download PDF files.
+   
+      ![alt text](https://github.com/Bhaveshkadam/Python/blob/main/Document/Download.jpeg)
+   
    - Use the `/update/` endpoint to update PDF files.
+   
+       ![alt text](https://github.com/Bhaveshkadam/Python/blob/main/Document/Update.jpeg)
+   
    - Use the `/delete/` endpoint to delete PDF files.
+   
+       ![alt text](https://github.com/Bhaveshkadam/Python/blob/main/Document/Delete.jpeg)
+   
    - Use the `/question/` endpoint to question for relevant information.
 
-
+       ![alt text](https://github.com/Bhaveshkadam/Python/blob/main/Document/Question.jpeg)
 
 
