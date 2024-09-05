@@ -1,0 +1,24 @@
+version: '3.8'  
+
+services:
+  postgres:
+    image: postgres-db  
+    build: . 
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: postgres        
+      POSTGRES_PASSWORD: qwerty1201
+      POSTGRES_DB: pdf_management  
+      POSTGRES_HOST: localhost          
+    ports:
+      - "5432:5432"  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  
+    networks:
+      - postgres_network
+
+volumes:
+  postgres_data:  
+
+networks:
+  postgres_network:

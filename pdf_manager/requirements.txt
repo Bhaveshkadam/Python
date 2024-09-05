@@ -7,3 +7,5 @@ scikit-learn
 numpy
 PyMuPDF
 transformers
+PyMuPDF
+multipart

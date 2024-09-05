@@ -8,16 +8,6 @@ from functions.database_connection import get_db_connection
 conn, cur = get_db_connection()
 
 
-
-# conn = psycopg2.connect(
-#         dbname="pdf_management",
-#         user="postgres",
-#         password="qwerty1201",
-#         host="localhost",
-#         port="5432"
-#     )
-# cur = conn.cursor()
-
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text from the PDF using PyMuPDF."""
     with fitz.open(pdf_path) as doc:

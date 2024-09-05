@@ -8,10 +8,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 import json
 import logging
 from transformers import pipeline
+from functions.database_connection import get_db_connection
 from functions.requestresponce import QuestionRequest, QuestionResponse
 from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db
 from models.llm import llms
-from functions.database_connection import get_db_connection
 
 app = FastAPI()
 
