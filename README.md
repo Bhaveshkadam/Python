@@ -33,8 +33,7 @@ Python 3.7+ installed on your system.
    ```
 
  5. Set Up PostgreSQL Database
-   - Ensure PostgreSQL is running.
-   - Create a new database named `pdf_managbement`.
+   - In order to get postgres up and running. Go to the `pdf_management` directory and run `docker-compose up -d`
    - Create a table named `pdf_embeddings` with the following structure:
    ```sql
      CREATE TABLE  pdf_embeddings (
