@@ -2,7 +2,7 @@
  1. Ability to upload large files into a database
  2. While generating the answer, take a reference to multiple uploaded files. The response must use the first 5 most similar content files. 
  3. Read about Chunking (for uploading large amounts of data)
- 4. Read about background tasks (implement background tasks)
+ 4. Read about background tasks (implement background tasks) -DONE 
 
  - Chunking embedding refers to the process of breaking down large pieces of text into smaller, more manageable chunks before generating embeddings for each chunk. Embeddings are vector representations of text used in natural language processing (NLP) models to capture the semantic meaning of the text.
 
