@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 import os
 import aiofiles
@@ -10,7 +10,7 @@ import logging
 from transformers import pipeline
 from functions.database_connection import get_db_connection
 from functions.requestresponce import QuestionRequest, QuestionResponse
-from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db
+from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db, process_file
 from models.llm import llms
 
 app = FastAPI()
@@ -24,17 +24,15 @@ conn, cur = get_db_connection()
 
 
 @app.post("/upload/")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="File must be a PDF")
 
     file_path = os.path.join(PDF_DIR, file.filename)
     async with aiofiles.open(file_path, 'wb') as out_file:
         await out_file.write(await file.read())
-
-    text = extract_text_from_pdf(file_path)
-    embeddings = generate_embeddings(text)
-    store_embeddings_in_db(file.filename, embeddings)
+    
+    background_tasks.add_task(process_file, file_path, file.filename)
 
     return {"filename": file.filename, "message": "File uploaded successfully"}
 
