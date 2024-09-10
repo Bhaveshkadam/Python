@@ -30,7 +30,7 @@ async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(
 
     file_path = os.path.join(PDF_DIR, file.filename)
     async with aiofiles.open(file_path, 'wb') as out_file:
-        await out_file.write(await file.read())
+            await out_file.write(await file.read())
     
     background_tasks.add_task(process_file, file_path, file.filename)
 
