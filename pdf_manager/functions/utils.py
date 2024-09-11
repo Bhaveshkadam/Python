@@ -8,6 +8,7 @@ import logging
 import asyncio
 import requests
 from functions.database_connection import get_db_connection
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -80,3 +81,13 @@ async def process_file(file_path: str, filename: str):
         logging.info(f"Processed file: {filename} and stored embeddings.")
     except Exception as e:
         logging.error(f"An error occurred while processing file {filename}: {e}")
+
+model_name = "facebook/bart-large-cnn"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+def generate_answer(question, content):
+    inputs = tokenizer(question + " " + content, return_tensors="pt", truncation=True, padding=True, max_length=512)
+    outputs = model.generate(**inputs, max_length=100, num_beams=4, early_stopping=True)
+    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return answer

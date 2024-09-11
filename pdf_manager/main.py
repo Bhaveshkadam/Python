@@ -7,11 +7,9 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import json
 import logging
-from transformers import pipeline
 from functions.database_connection import get_db_connection
 from functions.requestresponce import QuestionRequest, QuestionResponse
-from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db, process_file
-from models.llm import llms
+from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db, process_file, generate_answer
 
 app = FastAPI()
 
@@ -73,7 +71,6 @@ async def delete_pdf(filename: str):
 async def quation_answeer(request: QuestionRequest):
     question = request.question
     filename = request.filename
-    selected_llm = request.llm
 
     if not question:
         raise HTTPException(status_code=400, detail="Not empty, please ask a question.")
@@ -114,15 +111,6 @@ async def quation_answeer(request: QuestionRequest):
     pdf_path = os.path.join(PDF_DIR, best_filename)
     best_content = extract_text_from_pdf(pdf_path)
 
-    if selected_llm not in llms:
-        raise HTTPException(status_code=400, detail="Selected LLM is not available.")
-
-    llm_pipeline = llms[selected_llm]
-
-    # Generate the answer using the selected LLM pipeline
-    if selected_llm == "bart":
-        llm_answer = llm_pipeline(f"{question} {best_content}", max_length=100, num_beams=4, early_stopping=True)[0]['generated_text']
-    else:
-        llm_answer = llm_pipeline(question + " " + best_content, max_new_tokens=100)[0]['generated_text']
-        
+    llm_answer = generate_answer(question, best_content)
+    
     return QuestionResponse(filename=best_filename, score=best_score, content=best_content, llm_answer=llm_answer)
