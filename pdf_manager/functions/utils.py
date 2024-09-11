@@ -2,15 +2,18 @@ from PyPDF2 import PdfReader
 import pdfplumber
 import numpy as np
 import psycopg2
-from sentence_transformers import SentenceTransformer
 import json
 import logging
 import asyncio
 import requests
 from functions.database_connection import get_db_connection
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from sentence_transformers import SentenceTransformer
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+model_name = "facebook/bart-large-cnn"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text from the PDF, checking for encryption."""
@@ -30,7 +33,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
 
 def generate_embeddings(text: str) -> np.ndarray:
     try:
-        return model.encode(text)
+        return embedding_model.encode(text)
     except Exception as e:
         logging.error(f"An error occurred while generating embeddings: {e}")
         return np.array([])
@@ -81,10 +84,6 @@ async def process_file(file_path: str, filename: str):
         logging.info(f"Processed file: {filename} and stored embeddings.")
     except Exception as e:
         logging.error(f"An error occurred while processing file {filename}: {e}")
-
-model_name = "facebook/bart-large-cnn"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
 def generate_answer(question, content):
     inputs = tokenizer(question + " " + content, return_tensors="pt", truncation=True, padding=True, max_length=512)

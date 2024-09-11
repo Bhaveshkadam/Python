@@ -12,14 +12,12 @@ from functions.requestresponce import QuestionRequest, QuestionResponse
 from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db, process_file, generate_answer
 
 app = FastAPI()
-
 logging.basicConfig(level=logging.INFO)
 
 PDF_DIR = "./files/"
 os.makedirs(PDF_DIR, exist_ok=True)
 
 conn, cur = get_db_connection()
-
 
 @app.post("/upload/")
 async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
@@ -85,9 +83,8 @@ async def quation_answeer(request: QuestionRequest):
     
     rows = cur.fetchall()
 
-    best_score = float('-inf')
-    best_filename = None
-    similarity_threshold = 0.3
+    similarity_threshold = 0.5
+    file_scores = []
 
     for row in rows:
         filename, stored_embedding_str = row
@@ -95,22 +92,32 @@ async def quation_answeer(request: QuestionRequest):
         try:
             stored_embedding = np.array(json.loads(stored_embedding_str), dtype=np.float32)
             score = cosine_similarity([query_embedding], [stored_embedding])[0][0]
+            score = float(score)
             logging.info(f"Filename: {filename}, Similarity Score: {score}")
 
-            if score > best_score:
-                best_score = score
-                best_filename = filename
+            if score >= similarity_threshold:
+                file_scores.append((filename, score))
+
         except (json.JSONDecodeError, ValueError) as e:
             logging.error(f"Error processing stored_embedding for filename {filename}: {e}")
             continue
 
-    if best_filename is None or best_score < similarity_threshold:
+    file_scores = sorted(file_scores, key=lambda x: x[1], reverse=True)[:3]
+
+    if not file_scores:
         logging.info(f"No relevant information found for question: {question}")
         raise HTTPException(status_code=404, detail="Sorry, I couldn't find relevant information in the documents.")
-
-    pdf_path = os.path.join(PDF_DIR, best_filename)
-    best_content = extract_text_from_pdf(pdf_path)
-
-    llm_answer = generate_answer(question, best_content)
     
-    return QuestionResponse(filename=best_filename, score=best_score, content=best_content, llm_answer=llm_answer)
+    top_files = []
+    for file in file_scores:
+        pdf_path = os.path.join(PDF_DIR, file[0])
+        content = extract_text_from_pdf(pdf_path)
+        top_files.append({"filename": file[0], "score": file[1], "content": content})
+
+    best_content = top_files[0]["content"]
+    llm_answer = generate_answer(question, best_content)
+
+    return {
+        "top_files": top_files,
+        "llm_answer": llm_answer
+    }
