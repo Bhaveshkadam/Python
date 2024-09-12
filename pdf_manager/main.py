@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import json
 import logging
 from functions.database_connection import get_db_connection
-from functions.requestresponce import QuestionRequest, QuestionResponse
+from functions.requestresponce import QuestionRequest, QuestionResponse, FileInfo
 from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db, process_file, generate_answer
 
 app = FastAPI()
@@ -102,7 +102,7 @@ async def quation_answeer(request: QuestionRequest):
             logging.error(f"Error processing stored_embedding for filename {filename}: {e}")
             continue
 
-    file_scores = sorted(file_scores, key=lambda x: x[1], reverse=True)[:3]
+    file_scores = sorted(file_scores, key=lambda x: x[1], reverse=True)[:4]
 
     if not file_scores:
         logging.info(f"No relevant information found for question: {question}")
@@ -112,12 +112,15 @@ async def quation_answeer(request: QuestionRequest):
     for file in file_scores:
         pdf_path = os.path.join(PDF_DIR, file[0])
         content = extract_text_from_pdf(pdf_path)
-        top_files.append({"filename": file[0], "score": file[1], "content": content})
-
-    best_content = top_files[0]["content"]
+        top_files.append(FileInfo(
+            filename=file[0],  # String
+            score=file[1],     # Float
+            content=content    # String
+        ))
+    best_content = top_files[0].content
     llm_answer = generate_answer(question, best_content)
 
-    return {
-        "top_files": top_files,
-        "llm_answer": llm_answer
-    }
+    return QuestionResponse(
+    top_files=top_files,
+    llm_answer=llm_answer
+)
