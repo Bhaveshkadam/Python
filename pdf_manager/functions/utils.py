@@ -1,11 +1,7 @@
 from PyPDF2 import PdfReader
-import pdfplumber
 import numpy as np
-import psycopg2
-import json
 import logging
 import asyncio
-import requests
 from functions.database_connection import get_db_connection
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from sentence_transformers import SentenceTransformer
@@ -67,17 +63,16 @@ async def process_file(file_path: str, filename: str):
         embeddings_list = []
         for chunk in text_chunks:
             chunk_embeddings = generate_embeddings(chunk)
-            if chunk_embeddings.size > 0:  
+            if chunk_embeddings.size > 0:
                 embeddings_list.append(chunk_embeddings)
             else:
-                logging.warning(f"Failed to generate embeddings for chunk: {chunk[:100]}") 
+                logging.warning(f"Failed to generate embeddings for chunk: {chunk[:100]}")
 
         if not embeddings_list:
             raise ValueError("No valid embeddings were generated.")
         
         embeddings_array = np.array(embeddings_list)
         embeddings = np.mean(embeddings_array, axis=0)
-
 
         store_embeddings_in_db(filename, embeddings)
         
