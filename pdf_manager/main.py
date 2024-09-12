@@ -23,13 +23,12 @@ conn, cur = get_db_connection()
 async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="File must be a PDF")
-
+    
     file_path = os.path.join(PDF_DIR, file.filename)
     async with aiofiles.open(file_path, 'wb') as out_file:
-            await out_file.write(await file.read())
+        await out_file.write(await file.read())
     
     background_tasks.add_task(process_file, file_path, file.filename)
-
     return {"filename": file.filename, "message": "File uploaded successfully"}
 
 @app.get("/download/{filename}")
@@ -52,7 +51,7 @@ async def update_pdf(filename: str, file: UploadFile = File(...)):
     text = extract_text_from_pdf(file_path)
     embeddings = generate_embeddings(text)
     store_embeddings_in_db(filename, embeddings)
-
+    
     return {"status": "success", "message": f"Embeddings for {filename} updated successfully."}
 
 @app.delete("/delete/{filename}")
@@ -62,7 +61,7 @@ async def delete_pdf(filename: str):
         os.remove(file_path)
     cur.execute("DELETE FROM pdf_embeddings WHERE filename = %s", (filename,))
     conn.commit()
-
+    
     return {"message": "File deleted successfully"}
 
 @app.post("/question", response_model=QuestionResponse)
@@ -82,7 +81,6 @@ async def quation_answeer(request: QuestionRequest):
         cur.execute("SELECT filename, embeddings FROM pdf_embeddings")
     
     rows = cur.fetchall()
-
     similarity_threshold = 0.5
     file_scores = []
 
@@ -92,12 +90,10 @@ async def quation_answeer(request: QuestionRequest):
         try:
             stored_embedding = np.array(json.loads(stored_embedding_str), dtype=np.float32)
             score = cosine_similarity([query_embedding], [stored_embedding])[0][0]
-            score = float(score)
             logging.info(f"Filename: {filename}, Similarity Score: {score}")
 
             if score >= similarity_threshold:
-                file_scores.append((filename, score))
-
+                file_scores.append((filename, float(score)))
         except (json.JSONDecodeError, ValueError) as e:
             logging.error(f"Error processing stored_embedding for filename {filename}: {e}")
             continue
@@ -113,14 +109,15 @@ async def quation_answeer(request: QuestionRequest):
         pdf_path = os.path.join(PDF_DIR, file[0])
         content = extract_text_from_pdf(pdf_path)
         top_files.append(FileInfo(
-            filename=file[0],  # String
-            score=file[1],     # Float
-            content=content    # String
+            filename=file[0], 
+            score=file[1], 
+            content=content
         ))
+
     best_content = top_files[0].content
     llm_answer = generate_answer(question, best_content)
 
     return QuestionResponse(
-    top_files=top_files,
-    llm_answer=llm_answer
-)
+        top_files=top_files,
+        llm_answer=llm_answer
+    )
