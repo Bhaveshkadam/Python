@@ -2,7 +2,7 @@ from PyPDF2 import PdfReader
 import numpy as np
 import logging
 import asyncio
-from functions.database_connection import get_db_connection
+from database.database_connection import get_db_connection
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from sentence_transformers import SentenceTransformer
 

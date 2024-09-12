@@ -7,8 +7,8 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import json
 import logging
-from functions.database_connection import get_db_connection
-from functions.requestresponce import QuestionRequest, QuestionResponse, FileInfo
+from database.database_connection import get_db_connection
+from requestresponse.requestresponce import QuestionRequest, QuestionResponse, FileInfo
 from functions.utils import extract_text_from_pdf, generate_embeddings, store_embeddings_in_db, process_file, generate_answer
 
 app = FastAPI()
