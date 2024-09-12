@@ -1,7 +1,7 @@
 ## TODO List
- 1. Ability to upload large files into a database
- 2. While generating the answer, take a reference to multiple uploaded files. The response must use the first 5 most similar content files. 
- 3. Read about Chunking (for uploading large amounts of data)
+ 1. Ability to upload large files into a database -DONE
+ 2. While generating the answer, take a reference to multiple uploaded files. The response must use the first 5 most similar content files. -DONE
+ 3. Read about Chunking (for uploading large amounts of data) -DONE
  4. Read about background tasks (implement background tasks) -DONE 
 
  - Chunking embedding refers to the process of breaking down large pieces of text into smaller, more manageable chunks before generating embeddings for each chunk. Embeddings are vector representations of text used in natural language processing (NLP) models to capture the semantic meaning of the text.
@@ -38,19 +38,22 @@ Python 3.7+ installed on your system.
 
    If `requirements.txt` is not available, install the dependencies manually:
    ```bash
-   pip install fastapi aiofiles psycopg2-binary sentence-transformers scikit-learn pymupdf
+   pip install fastapi aiofiles psycopg2-binary sentence-transformers scikit-learn pyPDF2 transformers python-multipart  
    ```
 
  5. Set Up PostgreSQL Database
    - In order to get postgres up and running. Go to the `pdf_management` directory and run `docker-compose up -d`
    - Create a table named `pdf_embeddings` with the following structure:
-   ```sql
-     CREATE TABLE  pdf_embeddings (
-     ID SERIAL PRIMARY KEY,
-     filename TEXT UNIQUE,
-     embeddings VECTOR(384)  -- Adjust the dimensionality based on your embeddings
+      ```bash
+      CREATE EXTENSION IF NOT EXISTS vector;
+      ```
+      ```sql
+       CREATE TABLE  pdf_embeddings (
+      ID SERIAL PRIMARY KEY,
+      filename TEXT UNIQUE,
+      embeddings VECTOR(384)  -- Adjust the dimensionality based on your embeddings
      );
-  ```
+      ```
 6. Run the Application
    Start the FastAPI server:
    ```bash
